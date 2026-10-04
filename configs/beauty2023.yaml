@@ -1,0 +1,10 @@
+# Fallback when >15% of 2014 image URLs are dead: Amazon Reviews 2023, which ships fresh
+# image URLs. Beauty_and_Personal_Care is large; k_core=5 still leaves a big catalog, so the
+# config raises k-core. Record the dataset change and the resulting statistics in the results.
+base: base.yaml
+data:
+  name: beauty2023
+  source: amazon2023
+  reviews_file: Beauty_and_Personal_Care.jsonl.gz
+  meta_file: meta_Beauty_and_Personal_Care.jsonl.gz
+  k_core: 10

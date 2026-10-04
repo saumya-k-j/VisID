@@ -1,0 +1,23 @@
+{
+  "n_items": 12101,
+  "n_unique_prefixes": 3180,
+  "max_group": 160,
+  "collision_rate": 0.866953144368234,
+  "util_l0": 1.0,
+  "perplexity_l0": 154.66142673676262,
+  "util_l1": 1.0,
+  "perplexity_l1": 78.37507726519475,
+  "util_l2": 1.0,
+  "perplexity_l2": 90.8327554978866,
+  "unique_prefix_frac": 0.2627881993223701,
+  "level_sizes": [
+    256,
+    256,
+    256,
+    160
+  ],
+  "variant": "attr",
+  "seed": 0,
+  "train_sec": 222.3,
+  "final_recon": 0.003565937571693212
+}

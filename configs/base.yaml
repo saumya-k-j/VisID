@@ -1,0 +1,101 @@
+# Shared defaults. Dataset configs set `base: base.yaml` and override what differs.
+device: auto            # auto | cuda | cpu | mps
+results_dir: results
+seeds: [0, 1, 2]
+
+data:
+  raw_dir: data/raw
+  k_core: 5
+  cold_frac: 0.05       # TIGER: 5% of test items held out of training entirely
+  split_seed: 42        # the split is fixed across model seeds
+  image_check_sample: 500
+  dead_image_threshold: 0.15
+
+embed:
+  common_dim: 512       # every variant is PCA-projected to this size before the RQ-VAE
+  text_model: sentence-transformers/sentence-t5-base
+  image_model: google/siglip-base-patch16-224   # or openai/clip-vit-base-patch32
+  fused_text_weight: 0.5
+  attr_dim: 128
+
+ids:                    # RQ-VAE, TIGER Sec. 3.1
+  n_levels: 3
+  codebook_size: 256
+  latent_dim: 32
+  hidden: [512, 256, 128]
+  beta: 0.25
+  lr: 0.001
+  batch_size: 1024
+  epochs: 1000
+  reset_dead_every: 50  # re-seed codes unused for this many epochs (anti-collapse)
+  collapse_warn_util: 0.2
+  log_every: 50
+
+sasrec:
+  d_model: 64
+  n_layers: 2
+  n_heads: 2
+  max_len: 50
+  dropout: 0.3
+  loss: ce              # ce (full softmax) | bce (original SASRec, 1 negative)
+  lr: 0.001
+  weight_decay: 0.0
+  batch_size: 128
+  epochs: 200
+  eval_every: 5
+  patience: 5
+  val_users: null       # null = all validation users
+
+twotower:
+  content: text         # text | image | fused | attr | none
+  use_id: true
+  id_dropout: 0.5
+  ef_search: 64         # FAISS HNSW operating point used in the main table
+  d_model: 64
+  n_layers: 2
+  n_heads: 2
+  max_len: 50
+  dropout: 0.3
+  loss: ce
+  lr: 0.001
+  batch_size: 128
+  epochs: 200
+  eval_every: 5
+  patience: 5
+  val_users: null
+
+tiger:                  # TIGER Sec. 4: 4+4 layers, d_model 128, MLP 1024, dropout 0.1
+  d_model: 128
+  n_heads: 4
+  n_enc_layers: 4
+  n_dec_layers: 4
+  d_ff: 1024
+  dropout: 0.1
+  max_hist: 20
+  history_align: left   # left | right; right puts the most recent item at a fixed position
+  n_user_buckets: 2000
+  lr: 0.001
+  weight_decay: 0.01
+  warmup_steps: 1000
+  batch_size: 256
+  epochs: 200
+  eval_every: 5
+  patience: 6
+  val_users: 3000
+  val_beam: 10
+  test_beam: 20
+  cold_eps: [0.0, 0.1]  # TIGER's epsilon: share of top-K reserved for unseen items
+  measure_unconstrained: true
+  unconstrained_users: 2000
+
+bench:
+  batch_sizes: [1, 64]
+  n_users: 4096         # test users timed at batch 64
+  n_users_bs1: 500      # test users timed at batch 1
+  variants: [text, image, fused]
+  beams: [5, 10, 20, 40]
+  hnsw_M: 32
+  hnsw_ef: [16, 32, 64, 128, 256]
+  ivf_nprobe: [1, 4, 16, 64]
+  faiss_threads: 1
+  k: 10

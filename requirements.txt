@@ -1,0 +1,9 @@
+torch>=2.2
+numpy
+pyyaml
+faiss-cpu        # or faiss-gpu on CUDA machines (conda install -c pytorch faiss-gpu)
+matplotlib
+sentence-transformers>=2.7
+transformers>=4.40
+pillow
+pytest

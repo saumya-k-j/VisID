@@ -1,0 +1,19 @@
+{
+  "users": 22363,
+  "items": 12101,
+  "interactions": 198502,
+  "avg_seq_len": 8.876358270357287,
+  "density": 0.0007335227064174272,
+  "items_with_title": 0,
+  "items_with_image_url": 0,
+  "split": {
+    "cold_frac": 0.05,
+    "split_seed": 42,
+    "n_cold_items": 399,
+    "n_test_target_items": 7978,
+    "dropped_users": 3,
+    "dropped_cold_interactions": 6946,
+    "n_cold_test": 1193,
+    "n_warm_test": 21167
+  }
+}

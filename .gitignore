@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+data/raw/*
+!data/raw/.gitkeep
+data/processed/
+data/embeddings/
+data/ids/
+data/images/
+logs/
+results/**/model.pt
+results/**/rqvae.pt
+results/smoke/
+.DS_Store

@@ -1,0 +1,133 @@
+meta:
+  git: unknown
+  time: '2026-10-04 05:40:45'
+  seed: 1
+  torch: 2.11.0+cu130
+  python: 3.13.15
+  device: cuda
+device: auto
+results_dir: results
+seeds:
+- 0
+- 1
+- 2
+data:
+  raw_dir: data/raw
+  k_core: 5
+  cold_frac: 0.05
+  split_seed: 42
+  image_check_sample: 500
+  dead_image_threshold: 0.15
+  name: beauty2014
+  source: amazon2014
+  reviews_file: reviews_Beauty_5.json.gz
+  meta_file: meta_Beauty.json.gz
+  expected_stats:
+    users: 22363
+    items: 12101
+    interactions: 198502
+embed:
+  common_dim: 512
+  text_model: sentence-transformers/sentence-t5-base
+  image_model: google/siglip-base-patch16-224
+  fused_text_weight: 0.5
+  attr_dim: 128
+ids:
+  n_levels: 3
+  codebook_size: 256
+  latent_dim: 32
+  hidden:
+  - 512
+  - 256
+  - 128
+  beta: 0.25
+  lr: 0.001
+  batch_size: 1024
+  epochs: 1000
+  reset_dead_every: 50
+  collapse_warn_util: 0.2
+  log_every: 50
+sasrec:
+  d_model: 64
+  n_layers: 2
+  n_heads: 2
+  max_len: 50
+  dropout: 0.3
+  loss: ce
+  lr: 0.001
+  weight_decay: 0.0
+  batch_size: 128
+  epochs: 200
+  eval_every: 5
+  patience: 5
+  val_users: null
+twotower:
+  content: text
+  use_id: true
+  id_dropout: 0.5
+  ef_search: 64
+  d_model: 64
+  n_layers: 2
+  n_heads: 2
+  max_len: 50
+  dropout: 0.3
+  loss: ce
+  lr: 0.001
+  batch_size: 128
+  epochs: 200
+  eval_every: 5
+  patience: 5
+  val_users: null
+tiger:
+  d_model: 128
+  n_heads: 4
+  n_enc_layers: 4
+  n_dec_layers: 4
+  d_ff: 1024
+  dropout: 0.1
+  max_hist: 20
+  n_user_buckets: 2000
+  lr: 0.001
+  weight_decay: 0.01
+  warmup_steps: 1000
+  batch_size: 256
+  epochs: 200
+  eval_every: 5
+  patience: 6
+  val_users: 3000
+  val_beam: 10
+  test_beam: 20
+  cold_eps:
+  - 0.0
+  - 0.1
+  measure_unconstrained: true
+  unconstrained_users: 2000
+bench:
+  batch_sizes:
+  - 1
+  - 64
+  n_users: 4096
+  n_users_bs1: 500
+  variants:
+  - text
+  - image
+  - fused
+  beams:
+  - 5
+  - 10
+  - 20
+  - 40
+  hnsw_M: 32
+  hnsw_ef:
+  - 16
+  - 32
+  - 64
+  - 128
+  - 256
+  ivf_nprobe:
+  - 1
+  - 4
+  - 16
+  - 64
+  faiss_threads: 1
+  k: 10

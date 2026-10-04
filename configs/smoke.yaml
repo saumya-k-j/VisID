@@ -1,0 +1,14 @@
+# Synthetic catalog, tiny epochs: exercises every stage end to end in a few minutes on CPU.
+# Numbers from this config are meaningless as results.
+base: base.yaml
+data:
+  name: smoke
+  source: synthetic
+  synthetic: {n_users: 1500, n_items: 800, n_clusters: 25, dim: 64, seed: 0}
+embed: {common_dim: 32}
+ids: {codebook_size: 32, latent_dim: 16, hidden: [64, 32], epochs: 150, log_every: 50, reset_dead_every: 25}
+sasrec: {epochs: 10, eval_every: 5}
+twotower: {epochs: 10, eval_every: 5, content: fused}
+tiger: {d_model: 64, n_enc_layers: 2, n_dec_layers: 2, d_ff: 128, epochs: 6, eval_every: 3, warmup_steps: 50,
+        val_users: 300, unconstrained_users: 300}
+bench: {n_users: 256, n_users_bs1: 30, beams: [5, 10], hnsw_ef: [16, 64], ivf_nprobe: [1, 8]}

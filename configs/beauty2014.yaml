@@ -1,0 +1,8 @@
+# Main experiment: Amazon Beauty 5-core (McAuley 2014), the dataset TIGER reports on.
+base: base.yaml
+data:
+  name: beauty2014
+  source: amazon2014
+  reviews_file: reviews_Beauty_5.json.gz
+  meta_file: meta_Beauty.json.gz
+  expected_stats: {users: 22363, items: 12101, interactions: 198502}

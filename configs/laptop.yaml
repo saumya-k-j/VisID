@@ -1,0 +1,28 @@
+# Apple Silicon laptop (MPS, no CUDA). Same study as beauty2014.yaml, sized so it finishes
+# overnight-ish: one seed, a smaller generator, fewer epochs, smaller latency sweep.
+# Use: make all C=configs/laptop.yaml SEEDS=0
+# Report it as a laptop-budget run (1 seed, reduced TIGER); the 3-seed full-size table needs a GPU.
+base: beauty2014.yaml
+data:
+  name: beauty2014        # same processed data / embeddings as the full config
+results_dir: results_laptop
+embed:
+  image_model: google/siglip-base-patch16-224
+tiger:
+  n_enc_layers: 2
+  n_dec_layers: 2
+  d_ff: 512
+  lr: 0.002
+  warmup_steps: 300
+  epochs: 40
+  eval_every: 4
+  patience: 3
+  val_users: 2000
+sasrec: {epochs: 100}
+twotower: {epochs: 100}
+bench:
+  n_users: 1024
+  n_users_bs1: 300
+  beams: [5, 10, 20]
+  hnsw_ef: [16, 64, 256]
+  ivf_nprobe: [1, 16]
