@@ -12,3 +12,4 @@ results/**/model.pt
 results/**/rqvae.pt
 results/smoke/
 .DS_Store
+.DS_Store
