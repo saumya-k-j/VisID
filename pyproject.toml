@@ -10,6 +10,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest"]
+atlas = ["pymongo>=4.7"]
 
 [tool.setuptools.packages.find]
 include = ["visid*"]

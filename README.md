@@ -77,6 +77,29 @@ left-packed history (TIGER uses T5's relative positions; `tiger.history_align=ri
 implemented to test this), optimizer and schedule differences, and 4 heads of 32 instead of
 6 of 64. The comparisons between ID types use the same generator and are unaffected.
 
+### FAISS vs MongoDB Atlas Vector Search (`make bench-atlas`)
+
+The same two-tower item embeddings, indexed three ways on one machine: FAISS (Flat / HNSW / IVF)
+and MongoDB Atlas Vector Search running locally in Docker (`mongodb/mongodb-atlas-local`).
+Atlas uses a `vectorSearch` index with `dotProduct` (FAISS indexes inner product), HNSW
+`maxEdges` / `numEdgeCandidates` matched to FAISS `M` / `efConstruction`, and `category` /
+`is_cold` as filter fields. `numCandidates` is swept over the same values as `efSearch`.
+
+```bash
+make atlas-up                                                        # Atlas Local in Docker
+export MONGODB_URI="mongodb://localhost:27017/?directConnection=true"   # never committed
+pytest tests/test_atlas.py                                           # server tests run once MONGODB_URI is set
+make bench-atlas                                                     # -> results/<data>/bench_atlas/seed0/
+```
+
+Reported per setting: Recall@10 on the test item (warm / cold), **ANN Recall@10 against FAISS
+Flat**, p50 / p95 latency per batch (batch 1 and 64, user encoder included for every backend).
+Atlas has no batched query, so a batch of 64 is 64 `$vectorSearch` calls. One extra experiment:
+**filtered search** (each user's query restricted to the category of their last item), Atlas
+pre-filter vs FAISS HNSW with an `IDSelector` at the same efSearch, against the exact top-10
+within the category. The run ends by printing a `RESUME FACTS` block built only from that run.
+Results: not yet run on the real catalog.
+
 ## Pipeline validation before GPU access (CPU sandbox)
 
 The raw Amazon files, Hugging Face weights and image CDN were not reachable from the machine
@@ -224,7 +247,7 @@ visid/data/     loaders (2014, 2023, S3Rec, synthetic), k-core, splits, image ch
 visid/ids/      text / image / fused / attribute encoders, RQ-VAE, collision token, prefix trie
 visid/models/   SASRec + two-tower, TIGER, constrained beam search, training loops
 visid/eval/     metrics, warm/cold breakdown, coverage, why-diagnostics
-visid/bench/    latency sweeps and the recall-vs-latency plot
+visid/bench/    latency sweeps, FAISS + Atlas Vector Search backends, the recall-vs-latency plot
 visid/cli.py    the only module that knows paths; one subcommand per stage
 configs/        base.yaml + per-dataset configs; every run logs its resolved config
 tests/          spec tests, written before the code they test

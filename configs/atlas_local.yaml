@@ -1,0 +1,12 @@
+# FAISS (Flat / HNSW / IVF) vs MongoDB Atlas Vector Search on the same two-tower item embeddings,
+# run against Atlas Local in Docker on the same machine so latencies are comparable.
+#   docker compose up -d atlas
+#   export MONGODB_URI="mongodb://localhost:27017/?directConnection=true"   # never commit this
+#   make bench-atlas
+# Needs a trained two-tower: results/beauty2014/twotower_text/seed0/model.pt (make baselines).
+base: beauty2014.yaml
+device: cpu             # same device for every backend; the user encoder is timed for all of them
+bench:
+  variants: []          # ANN backends only; TIGER beam search is benchmarked by `make bench`
+  atlas:
+    enabled: true

@@ -14,7 +14,7 @@ import faiss
 import numpy as np
 import torch
 
-from visid.eval.metrics import split_metrics
+from visid.eval.metrics import overlap_at_k, split_metrics
 from visid.models.sasrec import pad_left
 
 
@@ -82,6 +82,7 @@ def bench_ann(model, split, users, cfg, device, batch_size: int) -> list[dict]:
     settings += [("hnsw", {"M": cfg.get("hnsw_M", 32)}, ef) for ef in cfg.get("hnsw_ef", [16, 32, 64, 128, 256])]
     settings += [("ivf", {}, npb) for npb in cfg.get("ivf_nprobe", [1, 4, 16, 64])]
     faiss.omp_set_num_threads(cfg.get("faiss_threads", 1))
+    flat_topk = None  # exact top-k: ground truth for ANN recall (overlap with FAISS Flat)
     for kind, kw, knob in settings:
         index = build_faiss(items, kind, **kw)
         if kind == "hnsw":
@@ -96,8 +97,10 @@ def bench_ann(model, split, users, cfg, device, batch_size: int) -> list[dict]:
             return I + 1
 
         lat, topk = _time_batches(run, batches, device)
+        if kind == "flat":
+            flat_topk = topk
         rows.append({"system": "two-tower+faiss", "index": kind, "knob": knob, "batch_size": batch_size,
-                     **_summary(lat, topk, targets, is_cold)})
+                     **_summary(lat, topk, targets, is_cold), "ann_recall@10": overlap_at_k(topk, flat_topk, k)})
     return rows
 
 

@@ -66,3 +66,11 @@ def list_stats(topk: np.ndarray, num_items: int, cold_items: set[int] | None = N
     if cold_items:
         out["cold_slot_share"] = float(np.isin(flat, list(cold_items)).mean()) if flat.size else 0.0
     return out
+
+
+def overlap_at_k(topk: np.ndarray, truth: np.ndarray, k: int = 10) -> float:
+    """ANN recall@k: mean fraction of the exact top-k (e.g. FAISS Flat) that a retriever's top-k
+    contains. Padding (-1 / 0) never counts as a hit."""
+    topk, truth = np.asarray(topk)[:, :k], np.asarray(truth)[:, :k]
+    hits = [len({int(a) for a in row if a > 0} & {int(b) for b in t if b > 0}) for row, t in zip(topk, truth)]
+    return float(np.mean(hits) / k) if hits else 0.0

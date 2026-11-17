@@ -99,3 +99,19 @@ bench:
   ivf_nprobe: [1, 4, 16, 64]
   faiss_threads: 1
   k: 10
+  atlas:                # MongoDB Atlas Vector Search as a third ANN backend (configs/atlas_local.yaml)
+    enabled: false      # true: `bench` also runs Atlas; needs MONGODB_URI in the environment (never in a config)
+    database: visid
+    collection: items
+    index_name: item_embedding
+    num_candidates: [16, 32, 64, 128, 256]   # swept like hnsw_ef; must be >= k
+    include_exact: true # also time exact (ENN) $vectorSearch
+    hnsw_options: {maxEdges: 32, numEdgeCandidates: 200}  # matched to FAISS hnsw_M=32, efConstruction=200
+    quantization: none  # none = full-precision floats, like FAISS HNSWFlat
+    category_level: 1   # filter field: this level of the item's category path (deepest if shorter)
+    query_concurrency: 1  # parallel $vectorSearch calls per batch (FAISS runs 1 thread)
+    index_timeout_s: 1200
+    filtered:           # pre-filtered search on category (batch 1); FAISS HNSW + IDSelector as reference
+      enabled: true
+      num_candidates: [64, 256]
+      n_users: 500

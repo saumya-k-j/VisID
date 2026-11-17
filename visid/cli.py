@@ -342,7 +342,7 @@ def _print_res(r):
 # ----------------------------------------------------------------------------- bench
 def cmd_bench(cfg, args):
     from visid.bench.latency import bench_ann, bench_generative
-    from visid.bench.plot import plot_recall_latency
+    from visid.bench.plot import bench_table, plot_recall_latency
     seed = args.seed
     set_seed(seed)
     split = load_split(cfg)
@@ -369,22 +369,87 @@ def cmd_bench(cfg, args):
         model.load_state_dict(torch.load(p, map_location="cpu"))
         gens.append((f"tiger_{v}", model.to(device).eval(), tok, trie.to(device)))
     torch.set_num_threads(b.get("torch_threads", torch.get_num_threads()))
+    atlas = _atlas_setup(cfg, split, tt) if b.get("atlas", {}).get("enabled") else None
     for bs in b["batch_sizes"]:
         n = len(users) if bs > 1 else min(len(users), b.get("n_users_bs1", 300))
         sub = users[:n]
+        start = len(rows)
         rows += bench_ann(tt, split, sub, b, device, bs)
         for name, model, tok, trie in gens:
             rows += bench_generative(model, tok, trie, split, sub, b, device, bs, name=name)
-        for r in rows[-(len(gens) * len(b["beams"]) + 1 + len(b["hnsw_ef"]) + len(b["ivf_nprobe"])):]:
-            print(f"bs={r['batch_size']:3d} {r['system']:16s} {r['index']:9s} knob={str(r['knob']):5s} "
-                  f"R@10={r['recall@10']:.4f} p50={r['p50_ms']:.2f}ms p95={r['p95_ms']:.2f}ms", flush=True)
+        if atlas:
+            from visid.bench.atlas import bench_atlas
+            rows += bench_atlas(tt, split, sub, atlas["coll"], b["atlas"], b, device, bs)
+        for r in rows[start:]:
+            _print_bench_row(r)
+    filtered = []
+    if atlas and b["atlas"].get("filtered", {}).get("enabled", True):
+        from visid.bench.atlas import bench_filtered
+        filtered = bench_filtered(tt, split, users, atlas["coll"], atlas["categories"], b["atlas"], b, device)
+        for r in filtered:
+            _print_bench_row(r)
     meta = {"device": str(device), "gpu": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
-            "torch_threads": torch.get_num_threads(), "seed": seed, "n_users": len(users)}
+            "torch_threads": torch.get_num_threads(), "seed": seed, "n_users": len(users),
+            "catalog_size": split.num_items, "embedding_dim": int(tt.items.all_items().shape[1])}
+    if atlas:
+        meta["atlas"] = atlas["meta"]
     out = root / "bench" / f"seed{seed}"
-    save_json({"meta": meta, "rows": rows}, out / "bench.json")
-    plot_recall_latency(rows, out / "recall_vs_latency.png",
-                        title=f"{cfg['data']['name']} | {meta['gpu'] or 'CPU'} | seed {seed}")
-    print(f"wrote {out}/bench.json and recall_vs_latency.png")
+    if atlas:  # keep the FAISS + TIGER benchmark from `make bench` intact
+        out = root / "bench_atlas" / f"seed{seed}"
+    save_json({"meta": meta, "rows": rows, "filtered": filtered}, out / "bench.json")
+    title = f"{cfg['data']['name']} | {meta['gpu'] or 'CPU'} | seed {seed}"
+    plot_recall_latency(rows, out / "recall_vs_latency.png", title=title)
+    plot_recall_latency(rows, out / "ann_recall_vs_latency.png", title=title, metric="ann_recall@10")
+    (out / "bench.md").write_text(bench_table(rows, filtered, meta))
+    print(f"wrote {out}/bench.json, bench.md, recall_vs_latency.png and ann_recall_vs_latency.png")
+    if atlas:
+        from visid.bench.plot import resume_facts
+        facts = resume_facts(meta, rows, filtered)
+        if cfg["data"].get("source") == "synthetic":  # CLAUDE.md rule 5
+            facts = "NOT FOR REPORTING: synthetic smoke catalog, plumbing check only\n" + facts
+        (out / "resume_facts.md").write_text(facts + "\n")
+        print("\n" + facts)
+
+
+def _print_bench_row(r):
+    ann = f" annR@10={r['ann_recall@10']:.4f}" if "ann_recall@10" in r else ""
+    rec = f" R@10={r['recall@10']:.4f}" if "recall@10" in r else ""
+    print(f"bs={r['batch_size']:3d} {r['system']:16s} {r['index']:11s} knob={str(r['knob']):5s}{rec}{ann} "
+          f"p50={r['p50_ms']:.2f}ms p95={r['p95_ms']:.2f}ms", flush=True)
+
+
+def _atlas_setup(cfg, split, model):
+    """Load the two-tower item embeddings into MongoDB and build the vectorSearch index. The
+    connection string comes only from the MONGODB_URI environment variable."""
+    import faiss
+    import pymongo
+    from visid.bench.atlas import (atlas_similarity, category_of, create_vector_index, index_definition,
+                                   item_documents, load_collection)
+    a = cfg["bench"]["atlas"]
+    uri = os.environ.get("MONGODB_URI")
+    if not uri:
+        sys.exit("bench.atlas.enabled is true but MONGODB_URI is not set. Start Atlas Local "
+                 "(docker compose up -d atlas) and export MONGODB_URI; see configs/atlas_local.yaml.")
+    with torch.no_grad():
+        items = model.items.all_items()[1:].float().cpu().numpy()
+    cats = [category_of(it, a.get("category_level", 1)) for it in sorted(load_items(cfg), key=lambda r: r["item_id"])]
+    assert len(cats) == len(items) == split.num_items
+    client = pymongo.MongoClient(uri, serverSelectionTimeoutMS=10000)
+    coll = client[a.get("database", "visid")][a.get("collection", "items")]
+    t0 = time.perf_counter()
+    load_collection(coll, item_documents(items, cats, split.cold_items))
+    load_s = time.perf_counter() - t0
+    sim = atlas_similarity(faiss.METRIC_INNER_PRODUCT)  # build_faiss indexes inner product
+    definition = index_definition(items.shape[1], sim, filter_paths=("category", "is_cold"),
+                                  hnsw_options=a.get("hnsw_options"), quantization=a.get("quantization"))
+    built = create_vector_index(coll, definition, a.get("index_name", "item_embedding"), a.get("index_timeout_s", 1200))
+    info = client.server_info()
+    meta = {"server_version": info.get("version"), "index_definition": definition, "load_s": load_s,
+            "index_build_s": built["build_s"], "n_documents": coll.count_documents({}),
+            "n_categories": len(set(cats)), "query_concurrency": a.get("query_concurrency", 1)}
+    print(f"atlas: {meta['n_documents']} docs, {meta['n_categories']} categories, index built in "
+          f"{built['build_s']:.1f}s (server {meta['server_version']})", flush=True)
+    return {"coll": coll, "categories": cats, "meta": meta}
 
 
 # ----------------------------------------------------------------------------- table

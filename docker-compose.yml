@@ -1,0 +1,17 @@
+# Atlas Local (MongoDB + Atlas Vector Search) for the FAISS-vs-Atlas benchmark.
+#   docker compose up -d atlas      # wait until `docker compose ps` shows healthy
+#   export MONGODB_URI="mongodb://localhost:27017/?directConnection=true"
+# Run it on the same machine as FAISS so latencies are comparable. The image is large and
+# Vector Search needs a few GB of RAM (Docker Desktop / Colima: give the VM >= 4 GB).
+services:
+  atlas:
+    image: mongodb/mongodb-atlas-local:${ATLAS_LOCAL_TAG:-latest}   # the exact server version is logged in bench.json
+    hostname: atlas
+    ports:
+      - "127.0.0.1:27017:27017"   # localhost only
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/runner", "healthcheck"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 30s

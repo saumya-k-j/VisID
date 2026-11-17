@@ -13,3 +13,6 @@ results/**/rqvae.pt
 results/smoke/
 .DS_Store
 .DS_Store
+
+# local secrets (MONGODB_URI)
+.env
