@@ -3,7 +3,7 @@ C     ?= configs/beauty2014.yaml
 SEEDS ?= 0 1 2
 V      = python -m visid.cli
 
-.PHONY: test smoke data images embed ids baselines tiger bench atlas-up atlas-down bench-atlas analyze table results all
+.PHONY: test smoke data images embed ids baselines tiger bench atlas-up atlas-down bench-atlas atlas-all analyze table results all
 
 test:            ## spec tests (splits, metrics, trie decoding, RQ-VAE round trip, models)
 	python -m pytest -q
@@ -47,6 +47,9 @@ atlas-down:
 bench-atlas:     ## FAISS Flat/HNSW/IVF vs Atlas $$vectorSearch on the same embeddings (+ filtered search)
 	@test -n "$$MONGODB_URI" || (echo "MONGODB_URI is not set (see .env.example)" && exit 1)
 	$(V) bench --config configs/atlas_local.yaml --seed 0
+
+atlas-all:       ## one command: data check, Atlas Local up, tests, FAISS-vs-Atlas benchmark
+	bash scripts/atlas_bench.sh
 
 analyze:         ## why-diagnostics: prefix agreement, kNN co-occurrence precision, collisions
 	$(V) analyze --config $(C) --seed 0
