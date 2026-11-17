@@ -8,6 +8,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 PY=${PYTHON:-python}
 export KMP_DUPLICATE_LIB_OK=TRUE PYTORCH_ENABLE_MPS_FALLBACK=1   # macOS: torch + faiss each ship OpenMP
+export OMP_NUM_THREADS=${OMP_NUM_THREADS:-1}   # ...and two runtimes segfault in parallel regions; FAISS is benchmarked on 1 thread anyway
 
 test -f results/beauty2014/twotower_text/seed0/model.pt || {
   echo "missing results/beauty2014/twotower_text/seed0/model.pt (copy it from the Colab/Drive run)"; exit 1; }

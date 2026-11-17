@@ -132,6 +132,7 @@ def _flat_truth(items, u, k, mask=None):
     """Exact inner-product top-k (FAISS Flat), optionally restricted to the items in `mask`."""
     import faiss
     ids = np.arange(len(items)) if mask is None else np.where(mask)[0]
+    faiss.omp_set_num_threads(1)  # same as bench.faiss_threads; avoids the macOS dual-OpenMP crash
     index = faiss.IndexFlatIP(items.shape[1])
     index.add(np.ascontiguousarray(items[ids]))
     return ids[index.search(np.ascontiguousarray(u), k)[1]] + 1
