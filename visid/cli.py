@@ -390,7 +390,7 @@ def cmd_bench(cfg, args):
             _print_bench_row(r)
     meta = {"device": str(device), "gpu": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
             "torch_threads": torch.get_num_threads(), "seed": seed, "n_users": len(users),
-            "catalog_size": split.num_items, "embedding_dim": int(tt.items.all_items().shape[1])}
+            "n_users_bs1": min(len(users), b.get("n_users_bs1", 300)), "catalog_size": split.num_items, "embedding_dim": int(tt.items.all_items().shape[1])}
     if atlas:
         meta["atlas"] = atlas["meta"]
     out = root / "bench" / f"seed{seed}"

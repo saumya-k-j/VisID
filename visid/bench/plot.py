@@ -95,7 +95,7 @@ def resume_facts(meta: dict, rows: list[dict], filtered: list[dict]) -> str:
     a = meta.get("atlas", {})
     out = ["RESUME FACTS (measured in this run; nothing estimated)",
            f"catalog size: {meta['catalog_size']} items | embedding dim: {meta['embedding_dim']} | "
-           f"device: {meta.get('gpu') or meta.get('device')} | test users: {meta['n_users']} | "
+           f"device: {meta.get('gpu') or meta.get('device')} | test users: {meta.get('n_users_bs1', '?')} at batch 1, {meta['n_users']} at batch 64 | "
            f"Atlas server {a.get('server_version')}, index build {a.get('index_build_s', float('nan')):.1f}s"]
     for bs in sorted({r["batch_size"] for r in rows}):
         for r in rows:

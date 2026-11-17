@@ -98,7 +98,8 @@ Atlas has no batched query, so a batch of 64 is 64 `$vectorSearch` calls. One ex
 **filtered search** (each user's query restricted to the category of their last item), Atlas
 pre-filter vs FAISS HNSW with an `IDSelector` at the same efSearch, against the exact top-10
 within the category. The run ends by printing a `RESUME FACTS` block built only from that run.
-Results: not yet run on the real catalog.
+Results (Apple Silicon laptop, CPU, Atlas Local 9.0.4 in Colima, seed 0): [`results/beauty2014/bench_atlas/seed0/bench.md`](results/beauty2014/bench_atlas/seed0/bench.md), ![ANN recall vs latency](results/beauty2014/bench_atlas/seed0/ann_recall_vs_latency.png)
+Batch-1 rows use `bench.n_users_bs1` users, batch-64 rows `bench.n_users`. Atlas latency includes the client round trip to the container and, at batch 64, 64 sequential queries; Atlas ENN is about as fast as its ANN here, so at 12k items the per-query overhead, not the graph search, sets its latency.
 
 ## Pipeline validation before GPU access (CPU sandbox)
 
